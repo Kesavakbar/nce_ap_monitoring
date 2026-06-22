@@ -273,16 +273,6 @@
               "type": "string",
               "canBeUsedToMatch": true,
               "removed": false
-            },
-            {
-              "id": "       ",
-              "displayName": "       ",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
             }
           ],
           "attemptToConvertTypes": false,
@@ -431,16 +421,6 @@
               "type": "string",
               "canBeUsedToMatch": true,
               "removed": false
-            },
-            {
-              "id": "       ",
-              "displayName": "       ",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
             }
           ],
           "attemptToConvertTypes": false,
@@ -1372,7 +1352,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "ab0dd9ea-15e2-44f7-bc86-61f13c253859",
+  "versionId": "fbbdcf66-39eb-4aa8-99e5-530a47edc2a9",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "8642b3828402d0b97c4a9a4c039c4fb55f117ada3d2db7549e62067f3dd981e1"
