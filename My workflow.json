@@ -1,0 +1,345 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": true
+        }
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "73cee154-c63d-43da-93c1-d256161acbb1",
+      "name": "Telegram Trigger",
+      "webhookId": "56434739-7b38-46a5-82bf-46e9b544d233",
+      "credentials": {
+        "telegramApi": {
+          "id": "u8cixPw7PiCtU5e3",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.photo.pop().file_id }}",
+        "additionalFields": {
+          "mimeType": ""
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        288,
+        0
+      ],
+      "id": "04f09653-baf1-42e8-b4fd-f49cd04a1b7d",
+      "name": "Get a file",
+      "webhookId": "482b7dfa-dfd2-4343-87b2-02c466171a79",
+      "credentials": {
+        "telegramApi": {
+          "id": "u8cixPw7PiCtU5e3",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "Extract data from this Access Point dashboard screenshot. \nIdentify all rows containing: AP Name, RSSI (dBm), CU (%), and Active User.\n\nCRITICAL INSTRUCTIONS FOR VALUES:\n1. For 'rssi_dbm', you MUST append the 'dbm' unit text at the end of the value (e.g., \"-70,54dbm\" or \"-10dbm\").\n2. For 'cu_percent', you MUST append the '%' unit text at the end of the value (e.g., \"56,4%\" or \"75,8%\").\n3. Make sure to preserve the comma format for decimals if present in the image.\n\nReturn the result as a strict raw JSON array, without any markdown formatting, backticks, or 'json' text wrapper. \n\nExpected format:\n[\n  {\n    \"ap_name\": \"AP_Name_Example\",\n    \"rssi_dbm\": \"-70,54dbm\",\n    \"cu_percent\": \"56,4%\",\n    \"access_user\": 1,\n    \"ap_status\": \"online\"\n  }\n]\n",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        752,
+        0
+      ],
+      "id": "c7d62e21-3d19-486d-b0b0-36afd5adce80",
+      "name": "Analyze an image",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "v3MnesqjoA2QAsTB",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "information"
+      },
+      "type": "n8n-nodes-base.editImage",
+      "typeVersion": 1,
+      "position": [
+        528,
+        0
+      ],
+      "id": "0c247446-acd4-4269-b670-170673ad1586",
+      "name": "Edit Image"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Mengambil teks JSON mentah hasil pembacaan Gemini\nconst rawText = $input.all()[0].json.content.parts[0].text;\n\n// Mengubah teks string menjadi objek Array JavaScript resmi\nconst apArray = JSON.parse(rawText);\n\n// Mengembalikan data ke format yang dipahami oleh node Google Sheets n8n\nreturn apArray.map(ap => {\n  return {\n    json: {\n      ap_name: ap.ap_name,\n      rssi_dbm: ap.rssi_dbm,\n      cu_percent: ap.cu_percent,\n      access_user: ap.access_user,\n      ap_status: ap.ap_status\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        0
+      ],
+      "id": "3cb7a0ad-8b68-409f-805e-722cc9c08f50",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1QA45oCU2lx_rqSpseLdR1dC5rSfWzgncDKpJeeuxIo8",
+          "mode": "list",
+          "cachedResultName": "nce_ap_monitoring",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QA45oCU2lx_rqSpseLdR1dC5rSfWzgncDKpJeeuxIo8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1745012115,
+          "mode": "list",
+          "cachedResultName": "ap_readings",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QA45oCU2lx_rqSpseLdR1dC5rSfWzgncDKpJeeuxIo8/edit#gid=1745012115"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ap_name": "={{ $json.ap_name }}",
+            "rssi_dbm": "={{ $json.rssi_dbm }}",
+            "cu_percent": "={{ $json.cu_percent }}",
+            "access_user": "={{ $json.access_user }}",
+            "ap_status": "={{ $json.ap_status }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "floor_id",
+              "displayName": "floor_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "scan_date",
+              "displayName": "scan_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "ap_name",
+              "displayName": "ap_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "rssi_dbm",
+              "displayName": "rssi_dbm",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "cu_percent",
+              "displayName": "cu_percent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "access_user",
+              "displayName": "access_user",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ap_status",
+              "displayName": "ap_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "signal_quality",
+              "displayName": "signal_quality",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1200,
+        0
+      ],
+      "id": "53a74102-7f9e-4d65-9ed6-fedd2ea9fe71",
+      "name": "Append row in sheet",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "afAYU4Hk7uKUOuSf",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1392,
+        432
+      ],
+      "id": "86c9a908-e71e-4f6d-bf53-41a31d90ff7a",
+      "name": "HTTP Request"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Edit Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Image": {
+      "main": [
+        [
+          {
+            "node": "Analyze an image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze an image": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "4447d8ce-0d9c-45c4-87b3-ebb45841d16f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8642b3828402d0b97c4a9a4c039c4fb55f117ada3d2db7549e62067f3dd981e1"
+  },
+  "nodeGroups": [],
+  "id": "qJ1dXiaOCxFtmIod",
+  "tags": []
+}
