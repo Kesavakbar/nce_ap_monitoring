@@ -1,0 +1,1383 @@
+{
+  "name": "nce_ap_monitoring",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": true
+        }
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -176,
+        416
+      ],
+      "id": "73cee154-c63d-43da-93c1-d256161acbb1",
+      "name": "Telegram Trigger",
+      "webhookId": "56434739-7b38-46a5-82bf-46e9b544d233",
+      "credentials": {
+        "telegramApi": {
+          "id": "u8cixPw7PiCtU5e3",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.photo.pop().file_id }}",
+        "additionalFields": {
+          "mimeType": ""
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        272,
+        400
+      ],
+      "id": "04f09653-baf1-42e8-b4fd-f49cd04a1b7d",
+      "name": "Get a file",
+      "webhookId": "482b7dfa-dfd2-4343-87b2-02c466171a79",
+      "credentials": {
+        "telegramApi": {
+          "id": "u8cixPw7PiCtU5e3",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "Extract data from this Access Point dashboard screenshot. \nIdentify all rows containing: AP Name, RSSI (dBm), CU (%), and Active User.\n\nCRITICAL INSTRUCTIONS FOR VALUES:\n1. For 'rssi_dbm', you MUST append the 'dbm' unit text at the end of the value (e.g., \"-70,54dbm\" or \"-10dbm\").\n2. For 'cu_percent', you MUST append the '%' unit text at the end of the value (e.g., \"56,4%\" or \"75,8%\").\n3. Make sure to preserve the comma format for decimals if present in the image.\n\nReturn the result as a strict raw JSON array, without any markdown formatting, backticks, or 'json' text wrapper. \n\nExpected format:\n[\n  {\n    \"ap_name\": \"AP_Name_Example\",\n    \"rssi_dbm\": \"-70,54dbm\",\n    \"cu_percent\": \"56,4%\",\n    \"access_user\": 1,\n    \"ap_status\": \"online\"\n  }\n]\n",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        960,
+        256
+      ],
+      "id": "c7d62e21-3d19-486d-b0b0-36afd5adce80",
+      "name": "Analyze an image",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "bFJIzdmO6Mv96skk",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "information"
+      },
+      "type": "n8n-nodes-base.editImage",
+      "typeVersion": 1,
+      "position": [
+        736,
+        256
+      ],
+      "id": "0c247446-acd4-4269-b670-170673ad1586",
+      "name": "Edit Image"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Mengambil teks JSON mentah hasil pembacaan Gemini\nconst rawText = $input.all()[0].json.content.parts[0].text;\n\n// Mengubah teks string menjadi objek Array JavaScript resmi\nconst apArray = JSON.parse(rawText);\n\n// Mengembalikan data ke format yang dipahami oleh node Google Sheets n8n\nreturn apArray.map(ap => {\n  return {\n    json: {\n      ap_name: ap.ap_name,\n      rssi_dbm: ap.rssi_dbm,\n      cu_percent: ap.cu_percent,\n      access_user: ap.access_user,\n      ap_status: ap.ap_status\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        400
+      ],
+      "id": "3cb7a0ad-8b68-409f-805e-722cc9c08f50",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        48,
+        400
+      ],
+      "id": "584e2bce-8d74-4b61-98f6-15ba467756ef",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f25b5c3d-7785-44c5-84ba-d0b2b981c76c",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        496,
+        400
+      ],
+      "id": "84ac1b96-afde-484a-84b7-47eb28cfb4d9",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1QA45oCU2lx_rqSpseLdR1dC5rSfWzgncDKpJeeuxIo8",
+          "mode": "list",
+          "cachedResultName": "nce_ap_monitoring",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QA45oCU2lx_rqSpseLdR1dC5rSfWzgncDKpJeeuxIo8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1916714481,
+          "mode": "list",
+          "cachedResultName": "Lantai_23",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QA45oCU2lx_rqSpseLdR1dC5rSfWzgncDKpJeeuxIo8/edit#gid=1916714481"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "time_scan_23": "={{ new Date().toLocaleString(\"id-ID\", {timeZone: \"Asia/Jakarta\"}) }}",
+            "ap_name_23": "={{ $json.ap_name }}",
+            "rssi_23": "={{ $json.rssi_dbm }}",
+            "channel_usage_23": "={{ $json.cu_percent }}",
+            "access_user_23": "={{ $json.access_user }}",
+            "anomaly_score_23": "={{ $json.anomaly_score }}",
+            "anomaly_type_23": "={{ $json.anomaly_type }}",
+            "severity_23": "={{ $json.severity }}",
+            "explanation_23": "={{ $json.explanation }}"
+          },
+          "matchingColumns": [
+            "time_scan_23"
+          ],
+          "schema": [
+            {
+              "id": "time_scan_23",
+              "displayName": "time_scan_23",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ap_name_23",
+              "displayName": "ap_name_23",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "rssi_23",
+              "displayName": "rssi_23",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "channel_usage_23",
+              "displayName": "channel_usage_23",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "access_user_23",
+              "displayName": "access_user_23",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "anomaly_score_23",
+              "displayName": "anomaly_score_23",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "anomaly_type_23",
+              "displayName": "anomaly_type_23",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "severity_23",
+              "displayName": "severity_23",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "explanation_23",
+              "displayName": "explanation_23",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "       ",
+              "displayName": "       ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "useAppend": false
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2192,
+        208
+      ],
+      "id": "e9558125-1317-4c00-b0cb-1be8b8132c1e",
+      "name": "lantai_23",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "afAYU4Hk7uKUOuSf",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1QA45oCU2lx_rqSpseLdR1dC5rSfWzgncDKpJeeuxIo8",
+          "mode": "list",
+          "cachedResultName": "nce_ap_monitoring",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QA45oCU2lx_rqSpseLdR1dC5rSfWzgncDKpJeeuxIo8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1170219809,
+          "mode": "list",
+          "cachedResultName": "Lantai_22",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QA45oCU2lx_rqSpseLdR1dC5rSfWzgncDKpJeeuxIo8/edit#gid=1170219809"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "time_scan_22": "={{ new Date().toLocaleString(\"id-ID\", {timeZone: \"Asia/Jakarta\"}) }}",
+            "ap_name_22": "={{ $json.ap_name }}",
+            "rssi_22": "={{ $json.rssi_dbm }}",
+            "channel_usage_22": "={{ $json.cu_percent }}",
+            "access_user_22": "={{ $json.access_user }}",
+            "anomaly_score_22": "={{ $json.anomaly_score }}",
+            "anomaly_type_22": "={{ $json.anomaly_type }}",
+            "severity_22": "={{ $json.severity }}",
+            "explanation_22": "={{ $json.explanation }}"
+          },
+          "matchingColumns": [
+            "time_scan_22"
+          ],
+          "schema": [
+            {
+              "id": "time_scan_22",
+              "displayName": "time_scan_22",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ap_name_22",
+              "displayName": "ap_name_22",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "rssi_22",
+              "displayName": "rssi_22",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "channel_usage_22",
+              "displayName": "channel_usage_22",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "access_user_22",
+              "displayName": "access_user_22",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "anomaly_score_22",
+              "displayName": "anomaly_score_22",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "anomaly_type_22",
+              "displayName": "anomaly_type_22",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "severity_22",
+              "displayName": "severity_22",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "explanation_22",
+              "displayName": "explanation_22",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "       ",
+              "displayName": "       ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "useAppend": false
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2192,
+        16
+      ],
+      "id": "fc45d581-f0eb-4df7-af82-23325991ea71",
+      "name": "lantai_22",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "afAYU4Hk7uKUOuSf",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.ap_name }}",
+                    "rightValue": "-22-",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "a7eddec5-5629-4da9-bbc3-c6d1f13e5ca9"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "22"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "0268bc2e-37a5-4b62-9b6d-29c779f32300",
+                    "leftValue": "={{ $json.ap_name }}",
+                    "rightValue": "-23-",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "23"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c1",
+                    "leftValue": "={{ $json.ap_name }}",
+                    "rightValue": "-25-",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "25"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c2",
+                    "leftValue": "={{ $json.ap_name }}",
+                    "rightValue": "-26-",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "26"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c3",
+                    "leftValue": "={{ $json.ap_name }}",
+                    "rightValue": "-27-",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "27"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1968,
+        352
+      ],
+      "id": "4f84899c-a378-459b-8dbd-6884563b7b14",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze this Access Point data for anomalies:\n\nAP Name: {{ $json.ap_name }}\nRSSI: {{ $json.rssi_dbm }}\nChannel Usage: {{ $json.cu_percent }}\nActive Users: {{ $json.access_user }}\nStatus: {{ $json.ap_status }}\n\nDetect anomalies based on these rules:\n- High RSSI (> -50 dBm) with low CU (< 20%) and 0 users = ANOMALY\n- Low RSSI (< -80 dBm) with high CU (> 80%) = ANOMALY\n- High CU (> 90%) with 0 users = ANOMALY\n- Status offline = CRITICAL ANOMALY\n- Normal RSSI (-50 to -80 dBm), moderate CU (20-80%), users > 0 = NORMAL\n\nProvide:\n- anomaly_score: 0-100 (0=normal, 100=critical)\n- anomaly_type: \"high_rssi_low_usage\" | \"poor_signal_high_load\" | \"ghost_traffic\" | \"offline\" | \"none\"\n- severity: \"normal\" | \"warning\" | \"critical\"\n- explanation: Brief reason for the score",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an expert network monitoring AI that analyzes Access Point metrics and detects anomalies. Return structured JSON output matching the exact schema provided."
+        }
+      },
+      "id": "cf82b2e3-2ca9-4c1a-96f6-71aca6e3d56d",
+      "name": "Anomaly Detector",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1392,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "id": "18102ebe-717c-49e3-9ba8-2f413a59727e",
+      "name": "Gemini Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1392,
+        720
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "bFJIzdmO6Mv96skk",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{ \"anomaly_score\": 0, \"anomaly_type\": \"none\", \"severity\": \"normal\", \"explanation\": \"All metrics are within normal range\" }"
+      },
+      "id": "bbf51c36-d3e3-47b5-a35b-2e128cb0c570",
+      "name": "Anomaly Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1536,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "ap_name",
+              "value": "={{ $(\"Code in JavaScript\").item.json.ap_name }}",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "rssi_dbm",
+              "value": "={{ $(\"Code in JavaScript\").item.json.rssi_dbm }}",
+              "type": "string"
+            },
+            {
+              "id": "a3",
+              "name": "cu_percent",
+              "value": "={{ $(\"Code in JavaScript\").item.json.cu_percent }}",
+              "type": "string"
+            },
+            {
+              "id": "a4",
+              "name": "access_user",
+              "value": "={{ $(\"Code in JavaScript\").item.json.access_user }}",
+              "type": "number"
+            },
+            {
+              "id": "a5",
+              "name": "ap_status",
+              "value": "={{ $(\"Code in JavaScript\").item.json.ap_status }}",
+              "type": "string"
+            },
+            {
+              "id": "a6",
+              "name": "anomaly_score",
+              "value": "={{ $json.output.anomaly_score }}",
+              "type": "number"
+            },
+            {
+              "id": "a7",
+              "name": "anomaly_type",
+              "value": "={{ $json.output.anomaly_type }}",
+              "type": "string"
+            },
+            {
+              "id": "a8",
+              "name": "severity",
+              "value": "={{ $json.output.severity }}",
+              "type": "string"
+            },
+            {
+              "id": "a9",
+              "name": "explanation",
+              "value": "={{ $json.output.explanation }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1d85ac54-5f94-4603-ba2e-4c561bc26580",
+      "name": "Add Anomaly Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1744,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1QA45oCU2lx_rqSpseLdR1dC5rSfWzgncDKpJeeuxIo8",
+          "mode": "list",
+          "cachedResultName": "nce_ap_monitoring",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QA45oCU2lx_rqSpseLdR1dC5rSfWzgncDKpJeeuxIo8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 783317333,
+          "mode": "list",
+          "cachedResultName": "Lantai_25",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QA45oCU2lx_rqSpseLdR1dC5rSfWzgncDKpJeeuxIo8/edit#gid=783317333"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "time_scan_25": "={{ new Date().toLocaleString(\"id-ID\", {timeZone: \"Asia/Jakarta\"}) }}",
+            "ap_name_25": "={{ $json.ap_name }}",
+            "rssi_25": "={{ $json.rssi_dbm }}",
+            "channel_usage_25": "={{ $json.cu_percent }}",
+            "access_user_25": "={{ $json.access_user }}",
+            "anomaly_score_25": "={{ $json.anomaly_score }}",
+            "anomaly_type_25": "={{ $json.anomaly_type }}",
+            "severity_25": "={{ $json.severity }}",
+            "explanation_25": "={{ $json.explanation }}"
+          },
+          "matchingColumns": [
+            "time_scan_25"
+          ],
+          "schema": [
+            {
+              "id": "time_scan_25",
+              "displayName": "time_scan_25",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ap_name_25",
+              "displayName": "ap_name_25",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "rssi_25",
+              "displayName": "rssi_25",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "channel_usage_25",
+              "displayName": "channel_usage_25",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "access_user_25",
+              "displayName": "access_user_25",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "anomaly_score_25",
+              "displayName": "anomaly_score_25",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "anomaly_type_25",
+              "displayName": "anomaly_type_25",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "severity_25",
+              "displayName": "severity_25",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "explanation_25",
+              "displayName": "explanation_25",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "       ",
+              "displayName": "       ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "useAppend": false
+        }
+      },
+      "id": "6b222aee-dfc3-4f45-90e3-32bfb7891d4e",
+      "name": "lantai_25",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2192,
+        400
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "afAYU4Hk7uKUOuSf",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1QA45oCU2lx_rqSpseLdR1dC5rSfWzgncDKpJeeuxIo8",
+          "mode": "list",
+          "cachedResultName": "nce_ap_monitoring",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QA45oCU2lx_rqSpseLdR1dC5rSfWzgncDKpJeeuxIo8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1951071534,
+          "mode": "list",
+          "cachedResultName": "Lantai_26",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QA45oCU2lx_rqSpseLdR1dC5rSfWzgncDKpJeeuxIo8/edit#gid=1951071534"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "time_scan_26": "={{ new Date().toLocaleString(\"id-ID\", {timeZone: \"Asia/Jakarta\"}) }}",
+            "ap_name_26": "={{ $json.ap_name }}",
+            "rssi_26": "={{ $json.rssi_dbm }}",
+            "channel_usage_26": "={{ $json.cu_percent }}",
+            "access_user_26": "={{ $json.access_user }}",
+            "anomaly_score_26": "={{ $json.anomaly_score }}",
+            "anomaly_type_26": "={{ $json.anomaly_type }}",
+            "severity_26": "={{ $json.severity }}",
+            "explanation_26": "={{ $json.explanation }}"
+          },
+          "matchingColumns": [
+            "time_scan_26"
+          ],
+          "schema": [
+            {
+              "id": "time_scan_26",
+              "displayName": "time_scan_26",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ap_name_26",
+              "displayName": "ap_name_26",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "rssi_26",
+              "displayName": "rssi_26",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "channel_usage_26",
+              "displayName": "channel_usage_26",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "access_user_26",
+              "displayName": "access_user_26",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "anomaly_score_26",
+              "displayName": "anomaly_score_26",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "anomaly_type_26",
+              "displayName": "anomaly_type_26",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "severity_26",
+              "displayName": "severity_26",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "explanation_26",
+              "displayName": "explanation_26",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "       ",
+              "displayName": "       ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "useAppend": false
+        }
+      },
+      "id": "11f1c1b7-b002-450c-92e9-e125630ff7d9",
+      "name": "lantai_26",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2192,
+        592
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "afAYU4Hk7uKUOuSf",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1QA45oCU2lx_rqSpseLdR1dC5rSfWzgncDKpJeeuxIo8",
+          "mode": "list",
+          "cachedResultName": "nce_ap_monitoring",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QA45oCU2lx_rqSpseLdR1dC5rSfWzgncDKpJeeuxIo8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 525907793,
+          "mode": "list",
+          "cachedResultName": "Lantai_27",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QA45oCU2lx_rqSpseLdR1dC5rSfWzgncDKpJeeuxIo8/edit#gid=525907793"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "time_scan_27": "={{ new Date().toLocaleString(\"id-ID\", {timeZone: \"Asia/Jakarta\"}) }}",
+            "ap_name_27": "={{ $json.ap_name }}",
+            "rssi_27": "={{ $json.rssi_dbm }}",
+            "channel_usage_27": "={{ $json.cu_percent }}",
+            "access_user_27": "={{ $json.access_user }}",
+            "anomaly_score_27": "={{ $json.anomaly_score }}",
+            "anomaly_type_27": "={{ $json.anomaly_type }}",
+            "severity_27": "={{ $json.severity }}",
+            "explanation_27": "={{ $json.explanation }}"
+          },
+          "matchingColumns": [
+            "time_scan_27"
+          ],
+          "schema": [
+            {
+              "id": "time_scan_27",
+              "displayName": "time_scan_27",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ap_name_27",
+              "displayName": "ap_name_27",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "rssi_27",
+              "displayName": "rssi_27",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "channel_usage_27",
+              "displayName": "channel_usage_27",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "access_user_27",
+              "displayName": "access_user_27",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "anomaly_score_27",
+              "displayName": "anomaly_score_27",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "anomaly_type_27",
+              "displayName": "anomaly_type_27",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "severity_27",
+              "displayName": "severity_27",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "explanation_27",
+              "displayName": "explanation_27",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "       ",
+              "displayName": "       ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "useAppend": false
+        }
+      },
+      "id": "e3bcd767-4b8e-4d92-878e-80e3896bdb5c",
+      "name": "lantai_27",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2192,
+        784
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "afAYU4Hk7uKUOuSf",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Image": {
+      "main": [
+        [
+          {
+            "node": "Analyze an image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze an image": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Anomaly Detector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Edit Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "lantai_22",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "lantai_23",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "lantai_25",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "lantai_26",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "lantai_27",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anomaly Detector": {
+      "main": [
+        [
+          {
+            "node": "Add Anomaly Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Anomaly Detector",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anomaly Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Anomaly Detector",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Anomaly Fields": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "ab0dd9ea-15e2-44f7-bc86-61f13c253859",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8642b3828402d0b97c4a9a4c039c4fb55f117ada3d2db7549e62067f3dd981e1"
+  },
+  "nodeGroups": [],
+  "id": "qJ1dXiaOCxFtmIod",
+  "tags": []
+}
